@@ -1,3 +1,4 @@
+import { Toaster } from 'react-hot-toast';
 import { Outlet } from 'react-router';
 import Footer from '../components/shared/Footer';
 import Navbar from '../components/shared/Navbar';
@@ -12,6 +13,19 @@ function RootLayout() {
       </main>
 
       <Footer />
+
+      <Toaster
+        position="top-right"
+        toastOptions={{
+          duration: 3500,
+          style: {
+            background: '#0f172a',
+            borderRadius: '12px',
+            color: '#ffffff',
+            padding: '14px 16px',
+          },
+        }}
+      />
     </div>
   );
 }

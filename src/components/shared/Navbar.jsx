@@ -1,11 +1,26 @@
-import { Menu, X } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import {
+  ChevronDown,
+  LogOut,
+  Menu,
+  UserRound,
+  X,
+} from 'lucide-react';
+import {
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
+import toast from 'react-hot-toast';
 import { Link, NavLink, useLocation } from 'react-router';
+import useAuth from '../../hooks/useAuth';
 import ThemeToggle from './ThemeToggle';
 
-const navigationLinks = [
+const publicNavigationLinks = [
   { name: 'Home', path: '/' },
   { name: 'Tutors', path: '/tutors' },
+];
+
+const privateNavigationLinks = [
   { name: 'Add Tutor', path: '/add-tutor' },
   { name: 'My Tutors', path: '/my-tutors' },
   {
@@ -15,12 +30,55 @@ const navigationLinks = [
 ];
 
 function Navbar() {
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { user, logOut } = useAuth();
   const { pathname } = useLocation();
+
+  const accountMenuRef = useRef(null);
+
+  const [mobileMenuOpen, setMobileMenuOpen] =
+    useState(false);
+  const [accountMenuOpen, setAccountMenuOpen] =
+    useState(false);
+  const [profileImageFailed, setProfileImageFailed] =
+    useState(false);
+
+  const userPhoto = user?.photoURL;
+
+  const navigationLinks = user
+    ? [...publicNavigationLinks, ...privateNavigationLinks]
+    : publicNavigationLinks;
+
+  const displayName =
+    user?.displayName || user?.email || 'Your account';
 
   useEffect(() => {
     setMobileMenuOpen(false);
+    setAccountMenuOpen(false);
   }, [pathname]);
+
+  useEffect(() => {
+    setProfileImageFailed(false);
+  }, [userPhoto]);
+
+  useEffect(() => {
+    const handleOutsideClick = (event) => {
+      if (
+        accountMenuRef.current &&
+        !accountMenuRef.current.contains(event.target)
+      ) {
+        setAccountMenuOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleOutsideClick);
+
+    return () => {
+      document.removeEventListener(
+        'mousedown',
+        handleOutsideClick
+      );
+    };
+  }, []);
 
   useEffect(() => {
     if (!mobileMenuOpen) return undefined;
@@ -42,6 +100,18 @@ function Navbar() {
     };
   }, [mobileMenuOpen]);
 
+  const handleLogOut = async () => {
+    try {
+      await logOut();
+
+      setAccountMenuOpen(false);
+      setMobileMenuOpen(false);
+      toast.success('You have been logged out.');
+    } catch {
+      toast.error('We could not log you out. Please try again.');
+    }
+  };
+
   const navLinkClass = ({ isActive }) =>
     `rounded-lg px-3 py-2 text-sm font-semibold transition ${
       isActive
@@ -55,6 +125,28 @@ function Navbar() {
         ? 'bg-blue-600 text-white'
         : 'text-slate-700 hover:bg-slate-100 hover:text-slate-950 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white'
     }`;
+
+  const renderAvatar = (className, iconSize) => {
+    if (userPhoto && !profileImageFailed) {
+      return (
+        <img
+          alt={displayName}
+          className={`${className} object-cover`}
+          onError={() => setProfileImageFailed(true)}
+          referrerPolicy="no-referrer"
+          src={userPhoto}
+        />
+      );
+    }
+
+    return (
+      <span
+        className={`${className} flex items-center justify-center bg-blue-100 text-blue-600 dark:bg-blue-500/15 dark:text-blue-400`}
+      >
+        <UserRound size={iconSize} />
+      </span>
+    );
+  };
 
   return (
     <>
@@ -83,19 +175,76 @@ function Navbar() {
           <div className="hidden items-center gap-3 lg:flex">
             <ThemeToggle />
 
-            <Link
-              className="rounded-xl px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white"
-              to="/login"
-            >
-              Log In
-            </Link>
+            {user ? (
+              <div
+                className="relative"
+                ref={accountMenuRef}
+              >
+                <button
+                  aria-expanded={accountMenuOpen}
+                  aria-label="Open account menu"
+                  className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white p-1.5 pr-2 text-slate-700 transition hover:border-blue-300 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-blue-500"
+                  onClick={() =>
+                    setAccountMenuOpen(
+                      (currentValue) => !currentValue
+                    )
+                  }
+                  title={displayName}
+                  type="button"
+                >
+                  {renderAvatar(
+                    'size-8 rounded-lg',
+                    17
+                  )}
 
-            <Link
-              className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700"
-              to="/register"
-            >
-              Register
-            </Link>
+                  <ChevronDown
+                    className={`transition-transform ${
+                      accountMenuOpen ? 'rotate-180' : ''
+                    }`}
+                    size={16}
+                  />
+                </button>
+
+                {accountMenuOpen && (
+                  <div className="absolute right-0 top-full mt-3 w-64 rounded-2xl border border-slate-200 bg-white p-3 shadow-2xl dark:border-slate-700 dark:bg-slate-900">
+                    <div className="border-b border-slate-200 px-2 pb-3 dark:border-slate-700">
+                      <p className="truncate font-bold text-slate-950 dark:text-white">
+                        {user.displayName || 'MediQueue member'}
+                      </p>
+
+                      <p className="mt-1 truncate text-sm text-slate-500 dark:text-slate-400">
+                        {user.email}
+                      </p>
+                    </div>
+
+                    <button
+                      className="mt-3 flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left font-semibold text-red-600 transition hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-500/10"
+                      onClick={handleLogOut}
+                      type="button"
+                    >
+                      <LogOut size={18} />
+                      Log Out
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <>
+                <Link
+                  className="rounded-xl px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white"
+                  to="/login"
+                >
+                  Log In
+                </Link>
+
+                <Link
+                  className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700"
+                  to="/register"
+                >
+                  Register
+                </Link>
+              </>
+            )}
           </div>
 
           <div className="flex items-center gap-2 lg:hidden">
@@ -174,22 +323,51 @@ function Navbar() {
           </div>
         </div>
 
-        <div className="grid gap-3 border-t border-slate-200 p-5 dark:border-slate-800">
-          <Link
-            className="rounded-xl border border-slate-300 px-4 py-3 text-center font-semibold text-slate-700 transition hover:bg-slate-100 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white"
-            onClick={() => setMobileMenuOpen(false)}
-            to="/login"
-          >
-            Log In
-          </Link>
+        <div className="border-t border-slate-200 p-5 dark:border-slate-800">
+          {user ? (
+            <div className="space-y-4">
+              <div className="flex items-center gap-3">
+                {renderAvatar('size-11 rounded-xl', 21)}
 
-          <Link
-            className="rounded-xl bg-blue-600 px-4 py-3 text-center font-semibold text-white transition hover:bg-blue-700"
-            onClick={() => setMobileMenuOpen(false)}
-            to="/register"
-          >
-            Register
-          </Link>
+                <div className="min-w-0">
+                  <p className="truncate font-bold text-slate-950 dark:text-white">
+                    {user.displayName || 'MediQueue member'}
+                  </p>
+
+                  <p className="truncate text-sm text-slate-500 dark:text-slate-400">
+                    {user.email}
+                  </p>
+                </div>
+              </div>
+
+              <button
+                className="flex w-full items-center justify-center gap-2 rounded-xl border border-red-200 px-4 py-3 font-semibold text-red-600 transition hover:bg-red-50 dark:border-red-500/30 dark:text-red-400 dark:hover:bg-red-500/10"
+                onClick={handleLogOut}
+                type="button"
+              >
+                <LogOut size={18} />
+                Log Out
+              </button>
+            </div>
+          ) : (
+            <div className="grid gap-3">
+              <Link
+                className="rounded-xl border border-slate-300 px-4 py-3 text-center font-semibold text-slate-700 transition hover:bg-slate-100 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white"
+                onClick={() => setMobileMenuOpen(false)}
+                to="/login"
+              >
+                Log In
+              </Link>
+
+              <Link
+                className="rounded-xl bg-blue-600 px-4 py-3 text-center font-semibold text-white transition hover:bg-blue-700"
+                onClick={() => setMobileMenuOpen(false)}
+                to="/register"
+              >
+                Register
+              </Link>
+            </div>
+          )}
         </div>
       </aside>
     </>
