@@ -1,20 +1,3 @@
-# Dependencies
-node_modules
-
-# Production build
-dist
-dist-ssr
-
-# Environment variables
-.env
-.env.local
-.env.development
-.env.production
-.env.*.local
-
-# Keep example environment file
-!.env.example
-
 # Logs
 logs
 *.log
@@ -22,16 +5,26 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
+lerna-debug.log*
 
-# Editors
+# Dependencies and builds
+node_modules
+dist
+dist-ssr
+*.local
+
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# Editor files
 .vscode/*
 !.vscode/extensions.json
 .idea
 .DS_Store
-
-# Windows
-Thumbs.db
-Desktop.ini
-
-# Miscellaneous
-*.local
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
