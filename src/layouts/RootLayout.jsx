@@ -4,12 +4,12 @@ import Navbar from '../components/shared/Navbar';
 
 function RootLayout() {
   return (
-    <div className="flex min-h-screen flex-col bg-slate-50 text-slate-950">
+    <div className="flex min-h-screen flex-col bg-slate-50 text-slate-950 transition-colors duration-300 dark:bg-slate-950 dark:text-slate-100">
       <Navbar />
 
-      <div className="flex-1">
+      <main className="flex-1">
         <Outlet />
-      </div>
+      </main>
 
       <Footer />
     </div>
